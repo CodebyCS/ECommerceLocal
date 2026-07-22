@@ -50,6 +50,13 @@ namespace ECommerceLocal.Data.Repositories
             await _users.DeleteOneAsync(
                 x => x.Id == ObjectId.Parse(id));
         }
+
+        public async Task<List<User>> SearchByNameAsync(string name)
+        {
+            return await _users
+                .Find(u => u.Name.ToLower().Contains(name.ToLower()))
+                .ToListAsync();
+        }
     }
 }
 

@@ -13,6 +13,8 @@ namespace ECommerceLocal.Domain.Interfaces
 
         Task<User?> GetByEmailAsync(string email);
 
+        Task<List<User>> SearchByNameAsync(string name);
+
         Task CreateAsync(User user);
 
         Task UpdateAsync(string id, User user);

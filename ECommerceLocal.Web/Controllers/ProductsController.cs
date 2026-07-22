@@ -1,83 +1,151 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using ECommerceLocal.Domain.Interfaces;
+using ECommerceLocal.Domain.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+
 
 namespace ECommerceLocal.Web.Controllers
 {
     public class ProductsController : Controller
     {
-        // GET: ProductsController
-        public ActionResult Index()
+        private readonly IProductRepository _productRepository;
+
+        public ProductsController(IProductRepository productRepository)
+        {
+            _productRepository = productRepository;
+        }
+
+        // GET: Products
+        public async Task<IActionResult> Index()
+        {
+            var products = await _productRepository.GetAllAsync();
+            return View(products);
+        }
+
+        public async Task<IActionResult> Search(string name)
+        {
+            var products = await _productRepository.SearchByNameAsync(name);
+
+            ViewBag.Search = name;
+
+            return View("Index", products);
+        }
+
+        // GET: Products/Details/ID
+        public async Task<IActionResult> Details(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var product = await _productRepository.GetByIdAsync(id);
+
+            if (product == null)
+                return NotFound();
+
+            return View(product);
+        }
+
+        // GET: Products/Create
+        public IActionResult Create()
         {
             return View();
         }
 
-        // GET: ProductsController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
-        }
-
-        // GET: ProductsController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
-
-        // POST: ProductsController/Create
+        // POST: Products/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<IActionResult> Create(Product product)
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            if (!ModelState.IsValid)
+                return View(product);
+
+            await _productRepository.CreateAsync(product);
+
+            TempData["Success"] = "Produto criado com sucesso.";
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: ProductsController/Edit/5
-        public ActionResult Edit(int id)
+        // GET: Products/Edit/ID
+        public async Task<IActionResult> Edit(string id)
         {
-            return View();
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var product = await _productRepository.GetByIdAsync(id);
+
+            if (product == null)
+                return NotFound();
+
+            return View(product);
         }
 
-        // POST: ProductsController/Edit/5
+        // POST: Products/Edit/ID
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<IActionResult> Edit(string id, Product product)
         {
-            try
-            {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+            if (id != product.Id.ToString())
+                return BadRequest();
+
+            if (!ModelState.IsValid)
+                return View(product);
+
+            await _productRepository.UpdateAsync(id, product);
+
+            TempData["Success"] = "Produto atualizado com sucesso.";
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: ProductsController/Delete/5
-        public ActionResult Delete(int id)
+        // GET: Products/Delete/ID
+        public async Task<IActionResult> Delete(string id)
         {
-            return View();
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var product = await _productRepository.GetByIdAsync(id);
+
+            if (product == null)
+                return NotFound();
+
+            return View(product);
         }
 
-        // POST: ProductsController/Delete/5
-        [HttpPost]
+        // POST: Products/Delete/ID
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public async Task<IActionResult> DeleteConfirmed(string id)
         {
-            try
-            {
+            await _productRepository.DeleteAsync(id);
+
+            TempData["Success"] = "Produto eliminado com sucesso.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // GET: Products/SearchCategory
+        public async Task<IActionResult> SearchCategory(string category)
+        {
+            if (string.IsNullOrWhiteSpace(category))
                 return RedirectToAction(nameof(Index));
-            }
-            catch
-            {
-                return View();
-            }
+
+            var products = await _productRepository.GetByCategoryAsync(category);
+
+            ViewBag.Category = category;
+
+            return View("Index", products);
+        }
+
+        // GET: Products/SearchPrice
+        public async Task<IActionResult> SearchPrice(decimal minPrice, decimal maxPrice)
+        {
+            var products = await _productRepository.GetByPriceAsync(minPrice, maxPrice);
+
+            ViewBag.MinPrice = minPrice;
+            ViewBag.MaxPrice = maxPrice;
+
+            return View("Index", products);
         }
     }
 }

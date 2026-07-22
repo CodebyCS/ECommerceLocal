@@ -11,6 +11,8 @@ namespace ECommerceLocal.Domain.Interfaces
 
         Task<Product?> GetByIdAsync(string id);
 
+        Task<List<Product>> SearchByNameAsync(string name);
+
         Task<List<Product>> GetByCategoryAsync(string category);
 
         Task<List<Product>> GetByPriceAsync(decimal minPrice, decimal maxPrice);

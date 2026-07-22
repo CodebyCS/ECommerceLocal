@@ -1,5 +1,7 @@
-﻿using ECommerceLocal.Domain.Interfaces;
+﻿using ECommerceLocal.Data.Context;
+using ECommerceLocal.Domain.Interfaces;
 using ECommerceLocal.Domain.Models;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
@@ -14,6 +16,13 @@ namespace ECommerceLocal.Data.Repositories
         public ProductRepository(MongoContext context)
         {
             _products = context.Products;
+        }
+
+        public async Task<List<Product>> SearchByNameAsync(string name)
+        {
+            return await _products
+                .Find(p => p.Name.ToLower().Contains(name.ToLower()))
+                .ToListAsync();
         }
 
         public async Task<List<Product>> GetAllAsync()

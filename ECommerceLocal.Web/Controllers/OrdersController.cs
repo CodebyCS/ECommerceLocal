@@ -1,83 +1,187 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using ECommerceLocal.Domain.Interfaces;
+using ECommerceLocal.Domain.Models;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace ECommerceLocal.Web.Controllers
 {
     public class OrdersController : Controller
     {
-        // GET: OrdersController
-        public ActionResult Index()
+        private readonly IOrderRepository _orderRepository;
+        private readonly IUserRepository _userRepository;
+        private readonly IProductRepository _productRepository;
+
+        public OrdersController(
+            IOrderRepository orderRepository,
+            IUserRepository userRepository,
+            IProductRepository productRepository)
         {
-            return View();
+            _orderRepository = orderRepository;
+            _userRepository = userRepository;
+            _productRepository = productRepository;
         }
 
-        // GET: OrdersController/Details/5
-        public ActionResult Details(int id)
+        // LISTAR
+        public async Task<IActionResult> Index()
         {
-            return View();
+            var orders = await _orderRepository.GetAllAsync();
+            return View(orders);
         }
 
-        // GET: OrdersController/Create
-        public ActionResult Create()
+        // DETALHES
+        public async Task<IActionResult> Details(string id)
         {
-            return View();
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var order = await _orderRepository.GetByIdAsync(id);
+
+            if (order == null)
+                return NotFound();
+
+            return View(order);
         }
 
-        // POST: OrdersController/Create
+        // CREATE (GET)
+        public async Task<IActionResult> Create()
+        {
+            await LoadDropdowns();
+            return View(new Order());
+        }
+
+        // CREATE (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<IActionResult> Create(Order order)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction(nameof(Index));
+                await LoadDropdowns();
+                return View(order);
             }
-            catch
+
+            decimal total = 0;
+
+            foreach (var item in order.Items)
             {
-                return View();
+                var product = await _productRepository.GetByIdAsync(item.ProductId.ToString());
+
+                if (product == null)
+                    continue;
+
+                item.UnitPrice = product.Price;
+
+                total += product.Price * item.Quantity;
             }
+
+            order.Total = total;
+            order.Date = DateTime.Now;
+
+            await _orderRepository.CreateAsync(order);
+
+            TempData["Success"] = "Encomenda criada com sucesso.";
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: OrdersController/Edit/5
-        public ActionResult Edit(int id)
+        // EDIT (GET)
+        public async Task<IActionResult> Edit(string id)
         {
-            return View();
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var order = await _orderRepository.GetByIdAsync(id);
+
+            if (order == null)
+                return NotFound();
+
+            await LoadDropdowns();
+
+            return View(order);
         }
 
-        // POST: OrdersController/Edit/5
+        // EDIT (POST)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<IActionResult> Edit(string id, Order order)
         {
-            try
+            if (id != order.Id.ToString())
+                return BadRequest();
+
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction(nameof(Index));
+                await LoadDropdowns();
+                return View(order);
             }
-            catch
+
+            decimal total = 0;
+
+            foreach (var item in order.Items)
             {
-                return View();
+                var product = await _productRepository.GetByIdAsync(item.ProductId.ToString());
+
+                if (product == null)
+                    continue;
+
+                item.UnitPrice = product.Price;
+
+                total += product.Price * item.Quantity;
             }
+
+            order.Total = total;
+
+            await _orderRepository.UpdateAsync(id, order);
+
+            TempData["Success"] = "Encomenda atualizada com sucesso.";
+
+            return RedirectToAction(nameof(Index));
         }
 
-        // GET: OrdersController/Delete/5
-        public ActionResult Delete(int id)
+        // DELETE (GET)
+        public async Task<IActionResult> Delete(string id)
         {
-            return View();
+            if (string.IsNullOrWhiteSpace(id))
+                return NotFound();
+
+            var order = await _orderRepository.GetByIdAsync(id);
+
+            if (order == null)
+                return NotFound();
+
+            return View(order);
         }
 
-        // POST: OrdersController/Delete/5
-        [HttpPost]
+        // DELETE (POST)
+        [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public ActionResult Delete(int id, IFormCollection collection)
+        public async Task<IActionResult> DeleteConfirmed(string id)
         {
-            try
+            await _orderRepository.DeleteAsync(id);
+
+            TempData["Success"] = "Encomenda eliminada.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // MÉTODO AUXILIAR
+        private async Task LoadDropdowns()
+        {
+            var users = await _userRepository.GetAllAsync();
+            var products = await _productRepository.GetAllAsync();
+
+            ViewBag.Users = users.Select(x => new SelectListItem
             {
-                return RedirectToAction(nameof(Index));
-            }
-            catch
+                Value = x.Id.ToString(),
+                Text = x.Name
+            });
+
+            ViewBag.Products = products.Select(x => new SelectListItem
             {
-                return View();
-            }
+                Value = x.Id.ToString(),
+                Text = $"{x.Name} - {x.Price:C}"
+            });
         }
     }
+}
 }

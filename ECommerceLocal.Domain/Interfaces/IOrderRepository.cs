@@ -1,4 +1,5 @@
 ﻿using ECommerceLocal.Domain.Models;
+using MongoDB.Bson;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -17,6 +18,10 @@ namespace ECommerceLocal.Domain.Interfaces
         Task UpdateAsync(string id, Order order);
 
         Task DeleteAsync(string id);
+
+        Task<List<BsonDocument>> GetOrdersWithProductsAsync();
+
+        Task<List<BsonDocument>> GetTotalSpentPerCustomerAsync();
 
         Task<List<BsonDocument>> GetOrdersWithProductsAsync();
 

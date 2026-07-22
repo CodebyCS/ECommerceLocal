@@ -11,10 +11,12 @@ namespace ECommerceLocal.Domain.Models
 
         public ObjectId UserId { get; set; }
 
-        public List<OrderItem> Items { get; set; }
+        public List<OrderItem> Items { get; set; } = new();
 
         public decimal Total { get; set; }
 
-        public DateTime Date { get; set; }
+        public DateTime Date { get; set; } = DateTime.Now;
+
+        public string Status { get; set; } = "Pendente";
     }
 }

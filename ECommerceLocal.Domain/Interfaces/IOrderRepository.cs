@@ -22,9 +22,5 @@ namespace ECommerceLocal.Domain.Interfaces
         Task<List<BsonDocument>> GetOrdersWithProductsAsync();
 
         Task<List<BsonDocument>> GetTotalSpentPerCustomerAsync();
-
-        Task<List<BsonDocument>> GetOrdersWithProductsAsync();
-
-        Task<List<BsonDocument>> GetTotalSpentPerCustomerAsync();
     }
 }

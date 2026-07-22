@@ -49,34 +49,52 @@ namespace ECommerceLocal.Data.Repositories
         {
             var pipeline = new[]
             {
-                new BsonDocument("$unwind", "$Items"),
-                new BsonDocument("$lookup",
-                    new BsonDocument
-                    {
-                        { "from", "products" },
-                        { "localField", "Items.ProductId" },
-                        { "foreignField", "_id" },
-                        { "as", "Product" }
-                    })
-            };
+        new BsonDocument("$unwind", "$Items"),
 
-            return await _orders.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        new BsonDocument("$lookup",
+            new BsonDocument
+            {
+                { "from", "products" },
+                { "localField", "Items.ProductId" },
+                { "foreignField", "_id" },
+                { "as", "Product" }
+            }),
+
+        new BsonDocument("$unwind", "$Product")
+    };
+
+            return await _orders
+                .Aggregate<BsonDocument>(pipeline)
+                .ToListAsync();
         }
 
         public async Task<List<BsonDocument>> GetTotalSpentPerCustomerAsync()
         {
             var pipeline = new[]
             {
-                new BsonDocument("$group",
-                    new BsonDocument
-                    {
-                        { "_id", "$UserId" },
-                        { "TotalSpent",
-                            new BsonDocument("$sum","$Total") }
-                    })
-            };
+        new BsonDocument("$group",
+            new BsonDocument
+            {
+                { "_id", "$UserId" },
+                { "TotalSpent",
+                    new BsonDocument("$sum", "$Total") }
+            }),
 
-            return await _orders.Aggregate<BsonDocument>(pipeline).ToListAsync();
+        new BsonDocument("$lookup",
+            new BsonDocument
+            {
+                { "from", "users" },
+                { "localField", "_id" },
+                { "foreignField", "_id" },
+                { "as", "User" }
+            }),
+
+        new BsonDocument("$unwind", "$User")
+    };
+
+            return await _orders
+                .Aggregate<BsonDocument>(pipeline)
+                .ToListAsync();
         }
     }
 }
